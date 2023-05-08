@@ -4,6 +4,14 @@ from .models import Attendee
 
 
 def api_list_attendees(request, conference_id):
+    attendees = [
+        {
+            "name": a.name,
+            "href": a.get_api_url(),
+        }
+        for a in Attendee.objects.filter(conference=conference_id)
+    ]
+    return JsonResponse({"attendees": attendees})
     """
     Lists the attendees names and the link to the attendee
     for the specified conference id.
@@ -23,7 +31,6 @@ def api_list_attendees(request, conference_id):
         ]
     }
     """
-    return JsonResponse({})
 
 
 def api_show_attendee(request, id):
