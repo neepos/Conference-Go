@@ -41,7 +41,7 @@ def api_list_attendees(request, conference_id):
     else:
         content = json.loads(request.body)
         try:
-            conference = Conference.object.get(id=conference_id)
+            conference = Conference.objects.get(id=conference_id)
             content["conference"] = conference
         except Conference.DoesNotExist:
             return JsonResponse(
@@ -56,21 +56,57 @@ def api_list_attendees(request, conference_id):
             safe=False
         )
 
+@require_http_methods(["DELETE", "GET", "PUT"])
 def api_show_attendee(request, id):
-    """
-    Returns the details for the Attendee model specified
-    by the id parameter.
-    """
-    attendee = Attendee.objects.get(id=id)
-    return JsonResponse(
-        {
-            "email": attendee.email,
-            "name": attendee.name,
-            "company_name": attendee.company_name,
-            "created": attendee.created,
-            "conference": {
-                "name": attendee.conference.name,
-                "href": attendee.conference.get_api_url(),
-            },
-        }
-    )
+    if request.method == "GET":
+        attendee = Attendee.objects.get(id=id)
+        return JsonResponse(
+            attendee,
+            encoder=AttendeeDetailEncoder,
+            safe=False,
+        )
+    elif request.method == "DELETE":
+        count, _ = Attendee.objects.filter(id=id).delete()
+        return JsonResponse({"deleted": count > 0})
+    else:
+        content = json.loads(request.body)
+        try:
+            if "conference" in content:
+                conference = Conference.objects.get(["name"])
+                content["name"] = conference
+        except Conference.DoesNotExist:
+            return JsonResponse(
+                {"message": "No associated conference"},
+                status=400,
+            )
+        Attendee.objects.filter(id=id).update(**content)
+        attendee = Attendee.objects.get(id=id)
+        return JsonResponse(
+            attendee,
+            encoder=AttendeeDetailEncoder,
+            safe=False,
+        )
+
+
+
+    # if request.method == "DELETE":
+    #     count, _ = Attendee.objects.filter(id=id).delete()
+    #     return JsonResponse({"deleted": count > 0})
+    
+    # elif request.method == "PUT":
+    #     attendee = json.loads(request.body)
+    #     attendee["conference"] = (
+    #         Conference.objects.get(
+    #             name=(attendee["conference"]["name"])
+    #         )
+    #     )
+    #     Attendee.objects.filter(id=id).update(**attendee)
+    
+    # attendee = Attendee.objects.get(id=id)
+    # return JsonResponse(
+    #         attendee,
+    #         encoder=AttendeeDetailEncoder,
+    #         safe=False,
+    # )
+
+
