@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from .models import Presentation
 from events.models import Conference
 from common.json import ModelEncoder
+from events.api_views import ConferenceListEncoder
 from django.views.decorators.http import require_http_methods
 import json
 
@@ -25,7 +26,14 @@ class PresentationDetailEncoder(ModelEncoder):
         "title",
         "synopsis",
         "created",
+        "conference",
     ]
+    encoders = {
+        "conference": ConferenceListEncoder(),
+    }
+
+    def get_extra_data(self, o):
+        return {"status": o.status.name}
 
 
 @require_http_methods(["GET", "POST"])
@@ -52,27 +60,36 @@ def api_list_presentations(request, conference_id):
             encoder=PresentationDetailEncoder,
             safe=False
         )
-    
+
 
 @require_http_methods(["GET", "DELETE", "PUT"])
 def api_show_presentation(request, id):
-
-    if request.method == "DELETE":
-        count,  = Presentation.objects.filter(id=id).delete()
-        return JsonResponse({"deleted": (count > 0)})
-
-    elif request.method == "PUT":
-        presentation = json.loads(request.body)
-        presentation["conference"] = (
-            Conference.objects.get(
-                name=(presentation["conference"]["name"])
-            )
+    if request.method == "GET":
+        presentation = Presentation.objects.get(id=id)
+        return JsonResponse(
+            presentation,
+            encoder=PresentationDetailEncoder,
+            safe=False,
         )
-        Presentation.objects.filter(id=id).update(**presentation)
+    elif request.method == "DELETE":
+        count, _ = Presentation.objects.filter(id=id).delete()
+        return JsonResponse({"deleted": count > 0})
+    else:
+        content = json.loads(request.body)
+        try:
+            if "conference" in content:
+                conference = Conference.objects.get(id=content["conference"])
+                content["conference"] = conference
+        except Conference.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid conference id"},
+                status=400,
+            )
+        Presentation.objects.filter(id=id).update(**content)
 
-    presentation = Presentation.objects.get(id=id)
-    return JsonResponse(
-        presentation,
-        encoder=PresentationDetailEncoder,
-        safe=False
-    )
+        presentation = Presentation.objects.get(id=id)
+        return JsonResponse(
+            presentation,
+            encoder=PresentationDetailEncoder,
+            safe=False,
+        )
