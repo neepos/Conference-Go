@@ -1,0 +1,20 @@
+# select base image/os
+FROM python:3
+RUN apt-get update
+RUN apt-get install cron -y
+# set environment/os variable so Python prints things immediately
+ENV PYTHONBUFFERED 1
+
+# set working directory
+WORKDIR /app
+
+# copy over requirements.txt
+COPY requirements.txt requirements.txt
+
+# install dependencies
+RUN pip install -r requirements.txt
+RUN touch /var/spool/cron/crontabs/root
+RUN crontab -l
+
+#run Django dev server
+CMD python manage.py crontab add && service cron start && python manage.py runserver "0.0.0.0:8001"

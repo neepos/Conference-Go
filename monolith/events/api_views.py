@@ -76,16 +76,39 @@ def api_list_conferences(request):
 
 
 def api_show_conference(request, id):
-    conference = Conference.objects.get(id=id)
-    weather = get_weather(
-        conference.location.city,
-        conference.location.state.name,
-    )
-    return JsonResponse(
-        {"conference": conference, "weather": weather},
-        encoder=ConferenceDetailEncoder,
-        safe=False,
-    )
+    if request.method == "GET":
+        conference = Conference.objects.get(id=id)
+        weather = get_weather(
+            conference.location.city, conference.location.state.name
+        )
+        return JsonResponse(
+            {"conference": conference, "weather": weather},
+            encoder=ConferenceDetailEncoder,
+            safe=False,
+        )
+
+    elif request.method == "DELETE":
+        count, _ = Conference.objects.filter(id=id).delete()
+        return JsonResponse({"deleted": count > 0})
+    else:
+        content = json.loads(request.body)
+        try:
+            if "location" in content:
+                location = Location.objects.get(id=content["location"])
+                content["location"] = location
+        except Location.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid location id"},
+                status=400,
+            )
+        Conference.objects.filter(id=id).update(**content)
+
+        conference = Conference.objects.get(id=id)
+        return JsonResponse(
+            conference,
+            encoder=ConferenceDetailEncoder,
+            safe=False,
+        )
 
 
 @require_http_methods(["GET", "POST"])
