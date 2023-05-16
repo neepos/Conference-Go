@@ -5,6 +5,7 @@ from common.json import ModelEncoder
 from events.api_views import ConferenceListEncoder
 from django.views.decorators.http import require_http_methods
 import json
+import pika
 
 
 class PresentationListEncoder(ModelEncoder):
@@ -93,3 +94,25 @@ def api_show_presentation(request, id):
             encoder=PresentationDetailEncoder,
             safe=False,
         )
+
+
+@require_http_methods(["PUT"])
+def api_approve_presentation(request, id):
+    presentation = Presentation.objects.get(id=id)
+    presentation.approve()
+    return JsonResponse(
+        presentation,
+        encoder=PresentationDetailEncoder,
+        safe=False,
+    )
+
+
+@require_http_methods(["PUT"])
+def api_reject_presentation(request, id):
+    presentation = Presentation.objects.get(id=id)
+    presentation.reject()
+    return JsonResponse(
+        presentation,
+        encoder=PresentationDetailEncoder,
+        safe=False,
+    )
