@@ -14,4 +14,4 @@ COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 #run Django dev server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD python attendees/account_info_consumer.py

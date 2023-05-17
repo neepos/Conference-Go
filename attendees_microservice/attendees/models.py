@@ -6,6 +6,12 @@ class ConferenceVO(models.Model):
     import_href = models.CharField(max_length=200, unique=True)
     name = models.CharField(max_length=200)
 
+class AccountVO(models.Model):
+    email = models.EmailField()
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    is_active = models.BooleanField()
+    updated = models.DateField(auto_now=True)
 
 class Attendee(models.Model):
 
