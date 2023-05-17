@@ -53,7 +53,7 @@ class Presentation(models.Model):
         self.save()
 
     def reject(self):
-        status = Status.objects.get(name="APPROVED")
+        status = Status.objects.get(name="REJECTED")
         self.status = status
         self.save()
 

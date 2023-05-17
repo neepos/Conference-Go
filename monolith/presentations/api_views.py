@@ -98,7 +98,24 @@ def api_show_presentation(request, id):
 
 @require_http_methods(["PUT"])
 def api_approve_presentation(request, id):
+
+    parameters = pika.ConnectionParameters(host="rabbitmq")
+    connection = pika.BlockingConnection(parameters)
+    channel = connection.channel()
+    channel.queue_declare(queue="presentation_approvals")
     presentation = Presentation.objects.get(id=id)
+    fields = {
+        "presenter_name": presentation.presenter_name,
+        "presenter_email": presentation.presenter_email,
+        "title": presentation.title,
+    }
+    body_items = json.dumps(fields)
+    channel.basic_publish(
+        exchange="", 
+        routing_key="presentation_approvals", 
+        body=body_items
+    )
+    connection.close()
     presentation.approve()
     return JsonResponse(
         presentation,
@@ -109,7 +126,23 @@ def api_approve_presentation(request, id):
 
 @require_http_methods(["PUT"])
 def api_reject_presentation(request, id):
+    parameters = pika.ConnectionParameters(host="rabbitmq")
+    connection = pika.BlockingConnection(parameters)
+    channel = connection.channel()
+    channel.queue_declare(queue="presentation_rejections")
     presentation = Presentation.objects.get(id=id)
+    fields = {
+        "presenter_name": presentation.presenter_name,
+        "presenter_email": presentation.presenter_email,
+        "title": presentation.title,
+    }
+    body_items = json.dumps(fields)
+    channel.basic_publish(
+        exchange="", 
+        routing_key="presentation_rejections", 
+        body=body_items
+    )
+    connection.close()
     presentation.reject()
     return JsonResponse(
         presentation,
